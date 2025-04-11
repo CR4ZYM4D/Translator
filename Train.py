@@ -1,6 +1,8 @@
 import torch.nn as nn
 from torch.utils.data import random_split, Dataset, DataLoader
 
+import Datasets
+
 from pathlib import Path
 
 from datasets import load_dataset
@@ -39,7 +41,7 @@ def getOrBuildTokenizer(config, dataset, language):
 
     return tokenizer
 
-# method to get the dataset
+# method to get and split the dataset
 
 def getDataset(config):
 
@@ -52,3 +54,23 @@ def getDataset(config):
     testing_set_size = len(raw_dataset) - training_set_size
 
     raw_training_set, raw_testing_set = random_split(raw_dataset,[training_set_size, testing_set_size])
+
+    training_set = Datasets.LanguageDataset(raw_training_set, tokenizer_src, tokenizer_target, config['language_src'], config['language_target'], config['sequence_length'])
+
+    testing_set = Datasets.LanguageDataset(raw_testing_set, tokenizer_src, tokenizer_target, config['language_src'], config['language_target'], config['sequence_length'])
+
+    max_src_len = 0
+    max_target_len = 0
+
+    for item in raw_dataset:
+
+        src_tokens = tokenizer_src.encode(item['translation'][config['language_src']]).ids
+        target_tokens = tokenizer_target.encode(item['translation'][config['language_target']]).ids
+
+        max_src_len = max(max_src_len, len(src_tokens)) 
+        max_target_len = max(max_target_len, len(target_tokens))
+
+    training_dataloader = DataLoader(training_set, batch_size = config['batch_size'], shuffle = True) 
+    testing_dataloader = DataLoader(testing_set, batch_size = 1, shuffle = True)
+
+    return training_dataloader, testing_dataloader, tokenizer_src, tokenizer_target 
