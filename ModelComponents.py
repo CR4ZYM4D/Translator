@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import math
 
+# class to create and pass the input embeddings of each word in the sequence creating the tensor 
 class InputEmbedding(nn.Module):
 
     def __init__(self, model_dimension: int, vocab_size: int):
@@ -15,6 +16,7 @@ class InputEmbedding(nn.Module):
 
         return self.embedding(x)*math.sqrt(self.model_dimension)
 
+# class to calculate and add the positional encodings to the sequence 
 class PositionalEncoding(nn.Module):
 
     def __init__(self, model_dimension: int, sequence_length: int, dropout: float):
@@ -44,5 +46,24 @@ class PositionalEncoding(nn.Module):
 
         return self.dropout(x)
     
+#class to return the normalized tensor as per x at j (Xj) = ((Xj-mean)/ root(variance +eps))*alpha + beta 
+
+class LayerNormalization(nn.Module):
+
+    def __init__(self, eps: float = 10**-6):
+        super().__init__()
+
+        self.alpha = nn.Parameter(torch.ones(1))    
+        self.beta = nn.Parameter(torch.zeros(1))
+
+        self.eps = eps
+
+    def forward(self, x):
+
+        mean = x.mean(dim =-1, keepdim = True)
+        std = x.std(dim =-1, keepdim = True)
+
+        return self.alpha * (x - mean)/(std + self.eps) + self.beta
     
+
 
