@@ -65,5 +65,76 @@ class LayerNormalization(nn.Module):
 
         return self.alpha * (x - mean)/(std + self.eps) + self.beta
     
+# class that sends the tensor in to a FFN
+
+class FeedForwardBlock(nn.Module):
+
+    def __init__(self, model_dimension: int, d_ff: int, dropout: float):
+        super().__init__()
+
+        self.layer1 = nn.Linear(model_dimension, d_ff)
+        self.layer2 = nn.Linear(d_ff, model_dimension)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+
+        return self.layer2(self.dropout(torch.relu(self.layer1(x))))
+    
+# class for the Multi-Head Attention Block which will be used for both self Multi-Head Attention of encoder and cross Multi-Head Attention of decoder
+
+class MultiHeadAttention(nn.Module):
+
+    def __init__(self, model_dimension: int, heads: int, dropout: float):
+        super().__init__()
+
+        self.model_dimension = model_dimension
+        self.heads = heads
+        self.dropout = nn.Dropout(dropout)
+
+        self.d_k = model_dimension//heads
+
+        self.Wq = nn.Linear(model_dimension, model_dimension)
+        self.Wk = nn.Linear(model_dimension, model_dimension)
+        self.Wv = nn.Linear(model_dimension, model_dimension)
+
+        self.Wo = nn.Linear(model_dimension, model_dimension)
+
+    @staticmethod
+    def attention(query, key, value, mask, dropout):
+
+        d_k = query.shape[-1]
+
+        attention_scores = (query @ key.transpose(-2, -1))/math.sqrt(d_k)
+
+        if mask is not None:
+            
+            attention_scores.masked_fill_(mask == 0, -1e9)
+
+        attention_scores = attention_scores.softmax(dim = -1)
+
+        if dropout is not None:
+
+            attention_scores = dropout(attention_scores)
+
+        return (attention_scores @ value), attention_scores
+
+    def forward(self, query, key, value, mask):
+
+        query = self.Wq(query)
+        key = self.Wk(key)
+        value = self.Wv(value)
+
+        query = query.view(query.shape[0], query.shape[1], self.heads, self.d_k).transpose(1, 2)
+        key = key.view(key.shape[0], key.shape[1], self.heads, self.d_k).transpose(1, 2)
+        value = value.view(value.shape[0], value.shape[1], self.heads, self.d_k).transpose(1, 2)
+
+        x, self.attention_scores = MultiHeadAttention.attention(query, key, value, mask, self.dropout)
+
+        x = x.transpose(1, 2).contigous().view(x.shape[0], -1, self.heads* self.d_k)
+
+        return self.Wo(x)
+    
+    
 
 
+    
