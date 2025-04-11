@@ -148,7 +148,3 @@ class ResiudalConnection(nn.Module):
 
         return x + self.dropout(sublayer(self.norm(x)))
     
-    
-
-
-    
