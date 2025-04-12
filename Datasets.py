@@ -14,9 +14,9 @@ class LanguageDataset(Dataset):
         self.language_target = language_target
         self.sequence_length = sequence_length
 
-        self.sos_token = torch.Tensor([tokenizer_src.token_to_id(['[SOS]'])], dtype = torch.int64)
-        self.eos_token = torch.Tensor([tokenizer_src.token_to_id(['[EOS]'])], dtype = torch.int64)
-        self.pad_token = torch.Tensor([tokenizer_src.token_to_id(['[PAD]'])], dtype = torch.int64)
+        self.sos_token = torch.Tensor([tokenizer_src.token_to_id('[SOS]')])
+        self.eos_token = torch.Tensor([tokenizer_src.token_to_id('[EOS]')])
+        self.pad_token = torch.Tensor([tokenizer_src.token_to_id('[PAD]')])
 
     def __len__(self):
         return len(self.dataset)
@@ -56,9 +56,9 @@ class LanguageDataset(Dataset):
 
         label = torch.cat(
             [
-                torch.tensor(dec_input_tokens, dtype= torch.int64),
+                torch.tensor([dec_input_tokens] * num_dec_padding_tokens, dtype= torch.int64),
                 self.eos_token,
-                torch.tensor([self.pad_token] * num_dec_padding_tokens, dtype = torch.int64)
+                torch.tensor(self.pad_token, dtype = torch.int64)
             ]
         )
 
